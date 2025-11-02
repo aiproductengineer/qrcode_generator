@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Sample SKU CSV</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Generate Sample SKU CSV</h2>
+    <p>Create a test CSV file with the specified number of SKUs:</p>
+
+    <label>Number of SKUs to generate:</label>
+    <input type="number" id="skuCount" value="8000" min="1" max="50000">
+
+    <button onclick="generateCSV()">Generate and Download CSV</button>
+
+    <div class="info">
+        <strong>Format:</strong> The CSV will include columns: sku, name, price, category
+        <br><br>
+        <strong>Example SKUs:</strong> SKU-00001, SKU-00002, etc.
+    </div>
+
+    <script>
+        function generateCSV() {
+            const count = parseInt(document.getElementById('skuCount').value);
+
+            if (count < 1 || count > 50000) {
+                alert('Please enter a number between 1 and 50000');
+                return;
+            }
+
+            // CSV header
+            let csv = 'sku,name,price,category\n';
+
+            const categories = ['Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Books', 'Toys', 'Food', 'Beauty', 'Automotive', 'Office'];
+            const products = ['Widget', 'Gadget', 'Device', 'Tool', 'Kit', 'Set', 'Pack', 'Bundle', 'Item', 'Product'];
+
+            // Generate rows
+            for (let i = 1; i <= count; i++) {
+                const sku = `SKU-${String(i).padStart(5, '0')}`;
+                const category = categories[Math.floor(Math.random() * categories.length)];
+                const product = products[Math.floor(Math.random() * products.length)];
+                const name = `${category} ${product} ${i}`;
+                const price = (Math.random() * 500 + 5).toFixed(2);
+
+                csv += `${sku},${name},${price},${category}\n`;
+            }
+
+            // Create download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sample-skus-${count}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            alert(`CSV with ${count} SKUs generated successfully!`);
+        }
+    </script>
+</body>
+</html>

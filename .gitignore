@@ -1,0 +1,26 @@
+# Generated files
+*.pdf
+qr-codes-*.pdf
+product-qr-codes-*.pdf
+
+# Large test CSVs (optional - remove if you want to include them)
+sample-skus-*.csv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+temp/

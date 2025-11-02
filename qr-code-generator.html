@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product SKU QR Code Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        .upload-section {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-section.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .info-text {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .csv-format {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .csv-format strong {
+            color: #856404;
+        }
+
+        .options-section {
+            margin-bottom: 25px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .preview-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .qr-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .qr-item canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .qr-label {
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product SKU QR Code Generator</h1>
+        <p class="subtitle">Generate QR codes for your retail product SKUs in bulk</p>
+
+        <div class="csv-format">
+            <strong>CSV Format:</strong> Your CSV file should have a column named "sku" or "SKU".
+            Additional columns like "name", "price", etc. can be included for labels.
+            <br>Example: <code>sku,name,price</code>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="upload-section" id="uploadSection">
+            <label for="csvFile" class="file-input-label">
+                Choose CSV File
+            </label>
+            <input type="file" id="csvFile" accept=".csv" />
+            <p class="info-text">or drag and drop your CSV file here</p>
+            <p class="info-text" id="fileName"></p>
+        </div>
+
+        <div class="options-section">
+            <h3 style="margin-bottom: 15px; color: #333;">QR Code Options</h3>
+            <div class="grid-layout">
+                <div class="option-group">
+                    <label for="qrSize">QR Code Size (px)</label>
+                    <input type="number" id="qrSize" value="128" min="64" max="512" />
+                </div>
+                <div class="option-group">
+                    <label for="codesPerRow">Codes Per Row</label>
+                    <input type="number" id="codesPerRow" value="4" min="1" max="8" />
+                </div>
+            </div>
+            <div class="option-group">
+                <label for="includeText">
+                    <input type="checkbox" id="includeText" checked style="width: auto; margin-right: 5px;" />
+                    Include SKU text below QR code
+                </label>
+            </div>
+        </div>
+
+        <button id="generateBtn" disabled>Generate QR Codes & Create PDF</button>
+
+        <div class="loading" id="loading">Generating QR codes and PDF...</div>
+
+        <div class="preview-section" id="previewSection" style="display: none;">
+            <h3 style="margin-bottom: 15px; color: #333;">Preview</h3>
+            <p style="color: #666; margin-bottom: 15px;">Showing first 20 QR codes</p>
+            <div class="preview-grid" id="previewGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        let productsData = [];
+        const csvFileInput = document.getElementById('csvFile');
+        const uploadSection = document.getElementById('uploadSection');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const fileName = document.getElementById('fileName');
+        const previewSection = document.getElementById('previewSection');
+        const previewGrid = document.getElementById('previewGrid');
+        const loading = document.getElementById('loading');
+
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                csvFileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        csvFileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = csvFileInput.files[0];
+            if (file) {
+                fileName.textContent = `Selected: ${file.name}`;
+                parseCSV(file);
+            }
+        }
+
+        function parseCSV(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim());
+
+                    if (lines.length < 2) {
+                        showStatus('CSV file must have at least a header row and one data row', 'error');
+                        return;
+                    }
+
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                    const skuIndex = headers.findIndex(h => h === 'sku' || h === 'SKU');
+
+                    if (skuIndex === -1) {
+                        showStatus('CSV must have a "sku" or "SKU" column', 'error');
+                        return;
+                    }
+
+                    const nameIndex = headers.findIndex(h => h === 'name' || h === 'product' || h === 'description');
+
+                    productsData = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim());
+                        if (values[skuIndex]) {
+                            productsData.push({
+                                sku: values[skuIndex],
+                                name: nameIndex !== -1 ? values[nameIndex] : '',
+                                row: values
+                            });
+                        }
+                    }
+
+                    if (productsData.length === 0) {
+                        showStatus('No valid SKU data found in CSV', 'error');
+                        return;
+                    }
+
+                    showStatus(`Successfully loaded ${productsData.length} products`, 'success');
+                    generateBtn.disabled = false;
+                } catch (error) {
+                    showStatus('Error parsing CSV: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+        }
+
+        generateBtn.addEventListener('click', async function() {
+            loading.classList.add('active');
+            previewSection.style.display = 'none';
+            previewGrid.innerHTML = '';
+
+            // Small delay to show loading state
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            try {
+                await generateQRCodesAndPDF();
+                showStatus('PDF generated successfully!', 'success');
+            } catch (error) {
+                showStatus('Error generating PDF: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+
+        async function generateQRCodesAndPDF() {
+            const qrSize = parseInt(document.getElementById('qrSize').value);
+            const codesPerRow = parseInt(document.getElementById('codesPerRow').value);
+            const includeText = document.getElementById('includeText').checked;
+
+            // Generate QR codes
+            const qrDataList = [];
+
+            for (const product of productsData) {
+                const tempDiv = document.createElement('div');
+                const qr = new QRCode(tempDiv, {
+                    text: product.sku,
+                    width: qrSize,
+                    height: qrSize,
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Wait for QR code to render
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                const canvas = tempDiv.querySelector('canvas');
+                if (canvas) {
+                    qrDataList.push({
+                        canvas: canvas,
+                        sku: product.sku,
+                        name: product.name
+                    });
+                }
+            }
+
+            // Show preview (first 20)
+            previewSection.style.display = 'block';
+            const previewCount = Math.min(20, qrDataList.length);
+            for (let i = 0; i < previewCount; i++) {
+                const item = qrDataList[i];
+                const qrItem = document.createElement('div');
+                qrItem.className = 'qr-item';
+
+                const clonedCanvas = document.createElement('canvas');
+                clonedCanvas.width = item.canvas.width;
+                clonedCanvas.height = item.canvas.height;
+                const ctx = clonedCanvas.getContext('2d');
+                ctx.drawImage(item.canvas, 0, 0);
+
+                qrItem.appendChild(clonedCanvas);
+
+                if (includeText) {
+                    const label = document.createElement('div');
+                    label.className = 'qr-label';
+                    label.textContent = item.sku;
+                    qrItem.appendChild(label);
+                }
+
+                previewGrid.appendChild(qrItem);
+            }
+
+            // Generate PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
+            const margin = 10;
+            const availableWidth = pageWidth - (2 * margin);
+
+            const cellWidth = availableWidth / codesPerRow;
+            const qrSizeMM = cellWidth * 0.7; // QR code takes 70% of cell width
+            const cellHeight = includeText ? qrSizeMM + 15 : qrSizeMM + 5;
+
+            const rowsPerPage = Math.floor((pageHeight - 2 * margin) / cellHeight);
+
+            let currentPage = 0;
+            let currentRow = 0;
+            let currentCol = 0;
+
+            for (let i = 0; i < qrDataList.length; i++) {
+                const item = qrDataList[i];
+
+                if (currentRow >= rowsPerPage) {
+                    pdf.addPage();
+                    currentPage++;
+                    currentRow = 0;
+                    currentCol = 0;
+                }
+
+                const x = margin + (currentCol * cellWidth) + (cellWidth - qrSizeMM) / 2;
+                const y = margin + (currentRow * cellHeight);
+
+                // Add QR code image
+                const imgData = item.canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', x, y, qrSizeMM, qrSizeMM);
+
+                // Add text label if enabled
+                if (includeText) {
+                    pdf.setFontSize(8);
+                    const textY = y + qrSizeMM + 4;
+                    const textX = margin + (currentCol * cellWidth) + (cellWidth / 2);
+                    pdf.text(item.sku, textX, textY, { align: 'center', maxWidth: cellWidth - 2 });
+                }
+
+                currentCol++;
+                if (currentCol >= codesPerRow) {
+                    currentCol = 0;
+                    currentRow++;
+                }
+            }
+
+            // Save PDF
+            const timestamp = new Date().toISOString().slice(0, 10);
+            pdf.save(`product-qr-codes-${timestamp}.pdf`);
+        }
+    </script>
+</body>
+</html>

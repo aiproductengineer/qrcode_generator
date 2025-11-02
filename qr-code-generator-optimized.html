@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk QR Code Generator (Optimized for Large Datasets)</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert strong {
+            color: #856404;
+        }
+
+        .upload-section {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-section.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .info-text {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .options-section {
+            margin-bottom: 25px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            display: block;
+        }
+
+        .progress-section {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .progress-details {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .stats.show {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bulk QR Code Generator</h1>
+        <p class="subtitle">Optimized for large datasets (tested up to 10,000+ SKUs)</p>
+
+        <div class="alert">
+            <strong>⚡ Optimized Version:</strong> This version uses batch processing and memory management
+            to handle large datasets efficiently. For 8000+ SKUs, this may take 2-5 minutes depending on your device.
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="upload-section" id="uploadSection">
+            <label for="csvFile" class="file-input-label">
+                Choose CSV File
+            </label>
+            <input type="file" id="csvFile" accept=".csv" />
+            <p class="info-text">or drag and drop your CSV file here</p>
+            <p class="info-text" id="fileName"></p>
+        </div>
+
+        <div class="stats" id="stats">
+            <h3 style="margin-bottom: 10px; color: #333;">File Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="skuCount">0</div>
+                    <div class="stat-label">Total SKUs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="estimatedPages">0</div>
+                    <div class="stat-label">Est. PDF Pages</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="estimatedTime">0s</div>
+                    <div class="stat-label">Est. Time</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="options-section">
+            <h3 style="margin-bottom: 15px; color: #333;">QR Code Options</h3>
+            <div class="grid-layout">
+                <div class="option-group">
+                    <label for="qrSize">QR Code Size</label>
+                    <select id="qrSize">
+                        <option value="100">Small (100x100)</option>
+                        <option value="128" selected>Medium (128x128)</option>
+                        <option value="150">Large (150x150)</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label for="codesPerRow">Codes Per Row</label>
+                    <select id="codesPerRow">
+                        <option value="3">3 per row</option>
+                        <option value="4" selected>4 per row</option>
+                        <option value="5">5 per row</option>
+                        <option value="6">6 per row</option>
+                    </select>
+                </div>
+            </div>
+            <div class="option-group">
+                <label>
+                    <input type="checkbox" id="includeText" checked style="width: auto; margin-right: 5px;" />
+                    Include SKU text below QR code
+                </label>
+            </div>
+        </div>
+
+        <button id="generateBtn" disabled>Generate QR Codes & Create PDF</button>
+
+        <div class="progress-section" id="progressSection">
+            <h3 style="margin-bottom: 15px; color: #333;">Processing...</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <div class="progress-details" id="progressDetails">
+                Initializing...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let productsData = [];
+        const csvFileInput = document.getElementById('csvFile');
+        const uploadSection = document.getElementById('uploadSection');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const fileName = document.getElementById('fileName');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressDetails = document.getElementById('progressDetails');
+        const stats = document.getElementById('stats');
+
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                csvFileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        csvFileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = csvFileInput.files[0];
+            if (file) {
+                fileName.textContent = `Selected: ${file.name}`;
+                parseCSV(file);
+            }
+        }
+
+        function parseCSV(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim());
+
+                    if (lines.length < 2) {
+                        showStatus('CSV file must have at least a header row and one data row', 'error');
+                        return;
+                    }
+
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                    const skuIndex = headers.findIndex(h => h === 'sku');
+
+                    if (skuIndex === -1) {
+                        showStatus('CSV must have a "sku" column (case-sensitive)', 'error');
+                        return;
+                    }
+
+                    const nameIndex = headers.findIndex(h => h === 'name' || h === 'product' || h === 'description');
+
+                    productsData = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim());
+                        if (values[skuIndex]) {
+                            productsData.push({
+                                sku: values[skuIndex],
+                                name: nameIndex !== -1 ? values[nameIndex] : ''
+                            });
+                        }
+                    }
+
+                    if (productsData.length === 0) {
+                        showStatus('No valid SKU data found in CSV', 'error');
+                        return;
+                    }
+
+                    updateStats();
+                    showStatus(`Successfully loaded ${productsData.length} products`, 'success');
+                    generateBtn.disabled = false;
+                } catch (error) {
+                    showStatus('Error parsing CSV: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function updateStats() {
+            const codesPerRow = parseInt(document.getElementById('codesPerRow').value);
+            const includeText = document.getElementById('includeText').checked;
+
+            const cellHeight = includeText ? 50 : 40; // Approximate mm
+            const rowsPerPage = Math.floor(250 / cellHeight); // A4 page ~250mm usable
+            const codesPerPage = rowsPerPage * codesPerRow;
+            const estimatedPages = Math.ceil(productsData.length / codesPerPage);
+
+            // Estimate: ~0.5 seconds per 100 SKUs for generation + PDF
+            const estimatedSeconds = Math.ceil(productsData.length / 100 * 0.5);
+            const estimatedTime = estimatedSeconds < 60 ?
+                `${estimatedSeconds}s` :
+                `${Math.floor(estimatedSeconds / 60)}m ${estimatedSeconds % 60}s`;
+
+            document.getElementById('skuCount').textContent = productsData.length.toLocaleString();
+            document.getElementById('estimatedPages').textContent = estimatedPages;
+            document.getElementById('estimatedTime').textContent = estimatedTime;
+            stats.classList.add('show');
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+        }
+
+        function updateProgress(percent, message) {
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = Math.round(percent) + '%';
+            progressDetails.textContent = message;
+        }
+
+        generateBtn.addEventListener('click', async function() {
+            generateBtn.disabled = true;
+            progressSection.classList.add('active');
+            statusMessage.style.display = 'none';
+
+            try {
+                await generateQRCodesAndPDF();
+                showStatus('PDF generated successfully!', 'success');
+            } catch (error) {
+                showStatus('Error generating PDF: ' + error.message, 'error');
+                console.error(error);
+            } finally {
+                progressSection.classList.remove('active');
+                generateBtn.disabled = false;
+            }
+        });
+
+        async function generateQRCodesAndPDF() {
+            const qrSize = parseInt(document.getElementById('qrSize').value);
+            const codesPerRow = parseInt(document.getElementById('codesPerRow').value);
+            const includeText = document.getElementById('includeText').checked;
+            const BATCH_SIZE = 100; // Process 100 QR codes at a time
+
+            updateProgress(0, 'Initializing PDF...');
+
+            // Initialize PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            const availableWidth = pageWidth - (2 * margin);
+
+            const cellWidth = availableWidth / codesPerRow;
+            const qrSizeMM = cellWidth * 0.75;
+            const cellHeight = includeText ? qrSizeMM + 12 : qrSizeMM + 5;
+            const rowsPerPage = Math.floor((pageHeight - 2 * margin) / cellHeight);
+
+            let currentRow = 0;
+            let currentCol = 0;
+            let isFirstPage = true;
+
+            // Process in batches
+            const totalBatches = Math.ceil(productsData.length / BATCH_SIZE);
+
+            for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+                const batchStart = batchIndex * BATCH_SIZE;
+                const batchEnd = Math.min(batchStart + BATCH_SIZE, productsData.length);
+                const batch = productsData.slice(batchStart, batchEnd);
+
+                updateProgress(
+                    (batchStart / productsData.length) * 90,
+                    `Generating QR codes: ${batchStart + 1} - ${batchEnd} of ${productsData.length}`
+                );
+
+                // Generate QR codes for this batch
+                for (let i = 0; i < batch.length; i++) {
+                    const product = batch[i];
+
+                    // Add new page if needed
+                    if (currentRow >= rowsPerPage) {
+                        pdf.addPage();
+                        currentRow = 0;
+                        currentCol = 0;
+                        isFirstPage = false;
+                    }
+
+                    const x = margin + (currentCol * cellWidth) + (cellWidth - qrSizeMM) / 2;
+                    const y = margin + (currentRow * cellHeight);
+
+                    try {
+                        // Generate QR code as data URL
+                        const qrDataURL = await QRCode.toDataURL(product.sku, {
+                            width: qrSize,
+                            height: qrSize,
+                            margin: 1,
+                            errorCorrectionLevel: 'H'
+                        });
+
+                        // Add to PDF
+                        pdf.addImage(qrDataURL, 'PNG', x, y, qrSizeMM, qrSizeMM);
+
+                        // Add text label if enabled
+                        if (includeText) {
+                            pdf.setFontSize(7);
+                            const textY = y + qrSizeMM + 4;
+                            const textX = margin + (currentCol * cellWidth) + (cellWidth / 2);
+                            pdf.text(product.sku, textX, textY, {
+                                align: 'center',
+                                maxWidth: cellWidth - 2
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error generating QR for ${product.sku}:`, error);
+                    }
+
+                    currentCol++;
+                    if (currentCol >= codesPerRow) {
+                        currentCol = 0;
+                        currentRow++;
+                    }
+                }
+
+                // Allow browser to breathe between batches
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            updateProgress(95, 'Finalizing PDF...');
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Save PDF
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            pdf.save(`product-qr-codes-${timestamp}.pdf`);
+
+            updateProgress(100, 'Complete!');
+        }
+
+        // Update stats when options change
+        document.getElementById('codesPerRow').addEventListener('change', () => {
+            if (productsData.length > 0) updateStats();
+        });
+        document.getElementById('includeText').addEventListener('change', () => {
+            if (productsData.length > 0) updateStats();
+        });
+    </script>
+</body>
+</html>
