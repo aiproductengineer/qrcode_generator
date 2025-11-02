@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulk QR Code Generator (Optimized for Large Datasets)</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -493,6 +494,41 @@
             }
         });
 
+        // Helper function to generate QR code canvas
+        function generateQRCanvas(text, size) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.display = 'none';
+                    document.body.appendChild(tempDiv);
+
+                    const qr = new QRCode(tempDiv, {
+                        text: text,
+                        width: size,
+                        height: size,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    // Wait for QR code to render
+                    setTimeout(() => {
+                        const canvas = tempDiv.querySelector('canvas');
+                        if (canvas) {
+                            const dataURL = canvas.toDataURL('image/png');
+                            document.body.removeChild(tempDiv);
+                            resolve(dataURL);
+                        } else {
+                            document.body.removeChild(tempDiv);
+                            reject(new Error('Canvas not found'));
+                        }
+                    }, 50);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
         async function generateQRCodesAndPDF() {
             // Validate required libraries are loaded
             if (typeof QRCode === 'undefined') {
@@ -505,7 +541,7 @@
             const qrSize = parseInt(document.getElementById('qrSize').value);
             const codesPerRow = parseInt(document.getElementById('codesPerRow').value);
             const includeText = document.getElementById('includeText').checked;
-            const BATCH_SIZE = 100; // Process 100 QR codes at a time
+            const BATCH_SIZE = 50; // Reduced batch size for stability
 
             updateProgress(0, 'Initializing PDF...');
 
@@ -566,13 +602,8 @@
                             continue;
                         }
 
-                        // Generate QR code as data URL
-                        const qrDataURL = await QRCode.toDataURL(product.sku, {
-                            width: qrSize,
-                            height: qrSize,
-                            margin: 1,
-                            errorCorrectionLevel: 'H'
-                        });
+                        // Generate QR code using our helper function
+                        const qrDataURL = await generateQRCanvas(product.sku, qrSize);
 
                         // Validate QR code was generated
                         if (!qrDataURL || !qrDataURL.startsWith('data:image')) {
@@ -608,7 +639,7 @@
                 }
 
                 // Allow browser to breathe between batches
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
 
             updateProgress(95, 'Finalizing PDF...');

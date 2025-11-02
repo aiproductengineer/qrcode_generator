@@ -58,12 +58,12 @@ SKU-003,Laptop Stand,45.00,Office
 ## Technical Details
 
 ### QR Code Library
-- **Library:** qrcode.js v1.5.3 (from npm)
-- **Source:** https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js
+- **Library:** QRCodeJS v1.0.0
+- **Source:** https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js
 - **Type:** Client-side JavaScript (no API calls, no internet needed after page load)
 
 ### Batch Processing
-The application processes QR codes in batches of 100 to:
+The application processes QR codes in batches of 50 to:
 - Prevent browser memory overload
 - Keep UI responsive
 - Show real-time progress
@@ -187,7 +187,8 @@ For issues or questions:
 ## License
 
 This application uses:
-- qrcode.js (MIT License)
+- QRCodeJS (MIT License)
 - jsPDF (MIT License)
+- html2canvas (MIT License)
 
 The code itself is provided as-is for your use.
