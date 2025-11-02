@@ -6,7 +6,7 @@ A client-side web application optimized for generating QR codes for large retail
 ## Files
 
 ### Main Application
-- **qr-code-generator-optimized.html** - Main application (USE THIS for 8000 SKUs)
+- **index.html** - Main application (USE THIS for 8000 SKUs)
   - ✅ Batch processing (processes 100 SKUs at a time)
   - ✅ Progress bar with real-time updates
   - ✅ Memory management to prevent browser crashes
@@ -25,7 +25,7 @@ A client-side web application optimized for generating QR codes for large retail
 Open `generate_sample_csv.html` in your browser and create a CSV with 8000 SKUs for testing.
 
 ### 2. Run the Generator
-1. Open `qr-code-generator-optimized.html` in any modern web browser
+1. Open `index.html` in any modern web browser
 2. Upload your CSV file (must have a "sku" column)
 3. Adjust options if needed:
    - QR code size (Small/Medium/Large)
