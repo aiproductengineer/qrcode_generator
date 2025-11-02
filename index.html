@@ -410,7 +410,7 @@
                     const skuIndex = headers.findIndex(h => h === 'sku');
 
                     if (skuIndex === -1) {
-                        showStatus('CSV must have a "sku" column (case-sensitive)', 'error');
+                        showStatus('CSV must have a "sku" or "SKU" column', 'error');
                         return;
                     }
 
@@ -434,6 +434,8 @@
 
                     updateStats();
                     showStatus(`Successfully loaded ${productsData.length} products`, 'success');
+                    console.log(`CSV loaded: ${productsData.length} SKUs found`);
+                    console.log('Sample SKUs:', productsData.slice(0, 5).map(p => p.sku));
                     generateBtn.disabled = false;
                 } catch (error) {
                     showStatus('Error parsing CSV: ' + error.message, 'error');
@@ -492,6 +494,14 @@
         });
 
         async function generateQRCodesAndPDF() {
+            // Validate required libraries are loaded
+            if (typeof QRCode === 'undefined') {
+                throw new Error('QRCode library not loaded. Please refresh the page.');
+            }
+            if (typeof window.jspdf === 'undefined') {
+                throw new Error('jsPDF library not loaded. Please refresh the page.');
+            }
+
             const qrSize = parseInt(document.getElementById('qrSize').value);
             const codesPerRow = parseInt(document.getElementById('codesPerRow').value);
             const includeText = document.getElementById('includeText').checked;
@@ -550,6 +560,12 @@
                     const y = margin + (currentRow * cellHeight);
 
                     try {
+                        // Validate SKU data
+                        if (!product.sku || product.sku.trim() === '') {
+                            console.warn(`Skipping empty SKU at index ${batchStart + i}`);
+                            continue;
+                        }
+
                         // Generate QR code as data URL
                         const qrDataURL = await QRCode.toDataURL(product.sku, {
                             width: qrSize,
@@ -557,6 +573,11 @@
                             margin: 1,
                             errorCorrectionLevel: 'H'
                         });
+
+                        // Validate QR code was generated
+                        if (!qrDataURL || !qrDataURL.startsWith('data:image')) {
+                            throw new Error('Invalid QR code generated');
+                        }
 
                         // Add to PDF
                         pdf.addImage(qrDataURL, 'PNG', x, y, qrSizeMM, qrSizeMM);
@@ -566,13 +587,17 @@
                             pdf.setFontSize(7);
                             const textY = y + qrSizeMM + 4;
                             const textX = margin + (currentCol * cellWidth) + (cellWidth / 2);
-                            pdf.text(product.sku, textX, textY, {
+                            const skuText = String(product.sku).substring(0, 50); // Limit length
+                            pdf.text(skuText, textX, textY, {
                                 align: 'center',
                                 maxWidth: cellWidth - 2
                             });
                         }
                     } catch (error) {
-                        console.error(`Error generating QR for ${product.sku}:`, error);
+                        console.error(`Error generating QR for SKU "${product.sku}":`, error);
+                        // Add error indicator to PDF instead of blank space
+                        pdf.setFontSize(6);
+                        pdf.text('ERROR', x + qrSizeMM/2, y + qrSizeMM/2, { align: 'center' });
                     }
 
                     currentCol++;
@@ -589,9 +614,23 @@
             updateProgress(95, 'Finalizing PDF...');
             await new Promise(resolve => setTimeout(resolve, 100));
 
+            // Verify PDF has content
+            const pageCount = pdf.internal.pages.length - 1; // Subtract 1 for the internal page
+            if (pageCount < 1) {
+                throw new Error('No pages generated. Please check your CSV data and try again.');
+            }
+
             // Save PDF
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            pdf.save(`product-qr-codes-${timestamp}.pdf`);
+            const filename = `product-qr-codes-${timestamp}.pdf`;
+
+            try {
+                pdf.save(filename);
+                console.log(`PDF saved successfully: ${filename} (${pageCount} pages)`);
+            } catch (saveError) {
+                console.error('Error saving PDF:', saveError);
+                throw new Error('Failed to save PDF. Please try again or use a different browser.');
+            }
 
             updateProgress(100, 'Complete!');
         }
